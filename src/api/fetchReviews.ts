@@ -22,6 +22,7 @@ export async function fetchReviews({
   params.append('limit', '20');
   params.append('platform', 'web');
   params.append('additionalPlatforms', 'appletv,ipad,iphone,mac');
+  params.append('sort', 'recent');
 
   const fetchResult = await fetch(`${requestUrl}?${params.toString()}`, {
     headers: {
