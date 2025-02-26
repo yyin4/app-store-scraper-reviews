@@ -3,15 +3,16 @@ import { getToken } from './api/getToken';
 import { sleep as _sleep } from './util';
 import { GetReviewsParams, Review, GetReviewsResponse } from './types';
 
-// Added an optional cutoffDate parameter. (If needed, update the types accordingly.)
+// Now accepts both cutoffOldest and cutoffRecent.
 export const getReviews = async ({
   country,
   appId,
   appName,
   numberOfReviews = 0,
   sleep = 1,
-  cutoffDate, // new optional parameter of type Date
-}: GetReviewsParams & { cutoffDate?: Date }) => {
+  cutoffOldest,   // reviews older than this are not included (and fetching stops)
+  cutoffRecent,   // reviews newer than this are skipped
+}: GetReviewsParams & { cutoffOldest?: Date, cutoffRecent?: Date }) => {
   const token = await getToken({
     country,
     appId,
@@ -35,8 +36,13 @@ export const getReviews = async ({
 
     if (Array.isArray(result?.data)) {
       for (const obj of result.data) {
-        // If a cutoff date is provided and this review is older, stop fetching further.
-        if (cutoffDate && new Date(obj.attributes.date) < cutoffDate) {
+        const reviewDate = new Date(obj.attributes.date);
+        // Skip reviews that are too new.
+        if (cutoffRecent && reviewDate > cutoffRecent) {
+          continue;
+        }
+        // If a review is older than our oldest cutoff, then stop fetching further.
+        if (cutoffOldest && reviewDate < cutoffOldest) {
           stopFetching = true;
           break;
         }
@@ -60,7 +66,7 @@ export const getReviews = async ({
       break;
     }
 
-    console.log("App Name: ", appName, "Review Count: ", reviewCount);
+    console.log("App Name:", appName, "Review Count:", reviewCount);
     await _sleep(sleep);
   }
 
